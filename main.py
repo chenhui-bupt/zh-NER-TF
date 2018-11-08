@@ -32,20 +32,20 @@ parser.add_argument('--embedding_dim', type=int, default=300, help='random init 
 parser.add_argument('--shuffle', type=str2bool, default=True, help='shuffle training data before each epoch')
 parser.add_argument('--mode', type=str, default='demo', help='train/test/demo')
 parser.add_argument('--demo_model', type=str, default='1521112368', help='model for test and demo')
-args = parser.parse_args()
+args = parser.parse_args()  # 解析命令行参数
 
 
 ## get char embeddings
-word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))
+word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))  # 词典：id，count（去除过低频次，归一化过数字，字母等非中文）
 if args.pretrain_embedding == 'random':
-    embeddings = random_embedding(word2id, args.embedding_dim)
+    embeddings = random_embedding(word2id, args.embedding_dim)  # 均匀初始化词向量
 else:
-    embedding_path = 'pretrain_embedding.npy'
+    embedding_path = 'pretrain_embedding.npy'  # 否则，读取预训练的词向量
     embeddings = np.array(np.load(embedding_path), dtype='float32')
 
 
 ## read corpus and get training data
-if args.mode != 'demo':
+if args.mode != 'demo':  # 读取训练集测试集，每个句子是词id序列和标签序列
     train_path = os.path.join('.', args.train_data, 'train_data')
     test_path = os.path.join('.', args.test_data, 'test_data')
     train_data = read_corpus(train_path)
@@ -54,20 +54,20 @@ if args.mode != 'demo':
 
 ## paths setting
 paths = {}
-timestamp = str(int(time.time())) if args.mode == 'train' else args.demo_model
+timestamp = str(int(time.time())) if args.mode == 'train' else args.demo_model  # 时间戳，代表模型的存放路径
 output_path = os.path.join('.', args.train_data+"_save", timestamp)
 if not os.path.exists(output_path): os.makedirs(output_path)
-summary_path = os.path.join(output_path, "summaries")
+summary_path = os.path.join(output_path, "summaries")  # summary路径，存放tf标量loss
 paths['summary_path'] = summary_path
 if not os.path.exists(summary_path): os.makedirs(summary_path)
-model_path = os.path.join(output_path, "checkpoints/")
+model_path = os.path.join(output_path, "checkpoints/")  # checkpoint路径，存放模型
 if not os.path.exists(model_path): os.makedirs(model_path)
-ckpt_prefix = os.path.join(model_path, "model")
+ckpt_prefix = os.path.join(model_path, "model")  # checkpoint前缀：'model-31680'
 paths['model_path'] = ckpt_prefix
-result_path = os.path.join(output_path, "results")
+result_path = os.path.join(output_path, "results")  # 结果目录，存放预测标签，评价结果等
 paths['result_path'] = result_path
 if not os.path.exists(result_path): os.makedirs(result_path)
-log_path = os.path.join(result_path, "log.txt")
+log_path = os.path.join(result_path, "log.txt")  # 日志
 paths['log_path'] = log_path
 get_logger(log_path).info(str(args))
 
@@ -75,7 +75,7 @@ get_logger(log_path).info(str(args))
 ## training model
 if args.mode == 'train':
     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-    model.build_graph()
+    model.build_graph()  # 网络的前向计算
 
     ## hyperparameters-tuning, split train/dev
     # dev_data = train_data[:5000]; dev_size = len(dev_data)
@@ -89,33 +89,33 @@ if args.mode == 'train':
 
 ## testing model
 elif args.mode == 'test':
-    ckpt_file = tf.train.latest_checkpoint(model_path)
+    ckpt_file = tf.train.latest_checkpoint(model_path)  # 它会找到最新的checkpoint
     print(ckpt_file)
     paths['model_path'] = ckpt_file
     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
     model.build_graph()
     print("test data: {}".format(test_size))
-    model.test(test_data)
+    model.test(test_data)  # 测试集
 
 ## demo
 elif args.mode == 'demo':
     ckpt_file = tf.train.latest_checkpoint(model_path)
     print(ckpt_file)
     paths['model_path'] = ckpt_file
-    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-    model.build_graph()
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)  # 构建模型实例对象
+    model.build_graph()  # 网络前向过程
     saver = tf.train.Saver()
     with tf.Session(config=config) as sess:
         print('============= demo =============')
-        saver.restore(sess, ckpt_file)
+        saver.restore(sess, ckpt_file)  # 恢复模型参数
         while(1):
             print('Please input your sentence:')
-            demo_sent = input()
+            demo_sent = input()  # 输入句子
             if demo_sent == '' or demo_sent.isspace():
                 print('See you next time!')
                 break
             else:
-                demo_sent = list(demo_sent.strip())
+                demo_sent = list(demo_sent.strip())  # list()后，变成字符级
                 demo_data = [(demo_sent, ['O'] * len(demo_sent))]
                 tag = model.demo_one(sess, demo_data)
                 PER, LOC, ORG = get_entity(tag, demo_sent)

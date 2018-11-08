@@ -23,7 +23,7 @@ def get_PER_entity(tag_seq, char_seq):
     PER = []
     for i, (char, tag) in enumerate(zip(char_seq, tag_seq)):
         if tag == 'B-PER':
-            if 'per' in locals().keys():
+            if 'per' in locals().keys():  # 局部变量中是否有'per'
                 PER.append(per)
                 del per
             per = char
@@ -87,7 +87,7 @@ def get_ORG_entity(tag_seq, char_seq):
     return ORG
 
 
-def get_logger(filename):
+def get_logger(filename):  # logger日志对像，有空仔细学习一下
     logger = logging.getLogger('logger')
     logger.setLevel(logging.DEBUG)
     logging.basicConfig(format='%(message)s', level=logging.DEBUG)
